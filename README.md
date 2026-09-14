@@ -43,13 +43,24 @@ Buka browser, masuk ke halaman `localhost:8000` untuk memuat web. Virtual enviro
 deactivate
 ```
 
+## Seeding (Linux, Mac)
+
+```bash
+chmod +x seeding.sh
+./seeding.sh
+```
+
 ## AI Disclosure
 
 Proyek ini dibuat dengan menggunakan bantuan AI Claude dengan model Sonnet 5. Strategi prompting yang  dilakukan adalah dengan memberikan attachment berupa file kode yang ingin dikerjakan ke model untuk mengatur konteks kemudian memberikan spesifikasi fitur yang ingin dibuat kepada model dan melakukan review pada kode yang digenerate model.
 
+Prompt Log:
+- [Tugas 2](https://claude.ai/share/8e15ecd3-8402-4af8-8dd9-761accac1c1e)
+
 ## Weekly Tracker
 
 - Week 1 (31 Agustus 2026 - 7 September 2026) : Membuat static page untuk section profile, skills, dan experience.
+- Week 2 (8 September 2026 - 14 September 2026) : Mengimplementasikan Django MVT.
 
 ## Pertanyaan Reflektif
 
@@ -68,3 +79,8 @@ Tantangan utama muncul di bagian skills dan experience. Kartu skill punya lebar 
 ```
 Batasan yang terdapat pada static web murni adalah minimnya interaktivitas yang bisa dilakukan antar user dan web. Fungsionalitas dinamis yang ingin diterapkan di web nantinya adalah opsi untuk user memilih menggunakan tema gelap/terang pada website ini.
 ```
+
+### Tugas 2
+1. Ketika pengguna membuka halaman portofolio, browser mengirim request yang pertama dicek oleh urls.py proyek untuk menentukan prefix URL mana yang diarahkan ke app mana lewat include(). Request lalu diteruskan ke urls.py aplikasi, yang memetakan path spesifik ke sebuah view. View mengambil data dengan query ke model (misalnya Project.objects.all()), lalu model menerjemahkan query itu ke SQL dan mengembalikan objek Python berisi data dari database. Data tersebut dikirim view ke template lewat context, dan template merendernya jadi HTML menggunakan tag seperti {% for %} dan {{ }}. Hasil render dibungkus jadi HttpResponse dan dikirim balik ke browser untuk ditampilkan.
+2. Data portofolio sebaiknya disimpan di model, bukan hardcode di template, karena template seharusnya hanya urusan tampilan, bukan penyimpanan data. Dengan model, data bisa diubah lewat admin tanpa edit kode atau deploy ulang, lebih skalabel untuk banyak entri (cukup satu loop di template), bisa dipakai ulang di banyak halaman tanpa duplikasi, dan punya validasi/struktur yang jelas sehingga tidak rawan typo atau inkonsistensi seperti kalau ditulis manual di HTML.
+3. makemigrations membuat file migrasi berdasarkan perubahan di models.py (mencatat rencana perubahan), sedangkan migrate mengeksekusi file itu ke database. Contoh: menambah field baru thumbnail = models.URLField(blank=True) di model Experience yang mengharuskan untuk menjalankan makemigrations guna membuat file migrasi, lalu migrate untuk benar-benar menambahkan kolom itu ke tabel database.
