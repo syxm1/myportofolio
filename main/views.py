@@ -1,7 +1,10 @@
-from django.shortcuts import render
+from django.contrib import messages
+from django.core import serializers
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 
-from main.models import Experience
-from main.models import Education
+from main.models import Experience, Education
+from main.forms import ExperienceForm, EducationForm
 
 def show_main(request):
     context = {
@@ -28,3 +31,31 @@ def show_education(request):
         "education_list": Education.objects.all(),
     }
     return render(request, "education.html", context)
+
+def create_experience(request):
+    form = ExperienceForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "New experience has been successfully added!")
+        return redirect("main:show_experience")
+
+    context = {
+        "name": "Hisyam",
+        "form": form,
+    }
+    return render(request, "experience_form.html", context)
+
+def create_education(request):
+    form = EducationForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "New education has been successfully added!")
+        return redirect("main:show_education")
+
+    context = {
+        "name": "Hisyam",
+        "form": form,
+    }
+    return render(request, "education_form.html", context)
