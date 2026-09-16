@@ -121,6 +121,136 @@ h1, .brand {
     font-weight: 600;
 }
 
+.button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: inline-block;
+    height: fit-content;
+    border: 0;
+    border-radius: var(--radius);
+    padding: 0.5rem 0.9rem;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.button-secondary {
+    background: var(--ink);
+}
+
+.button-danger {
+    background: #b42318;
+}
+
+.button-danger:hover {
+    background: #8f1b13;
+}
+
+.button-danger:focus-visible {
+    outline: 3px solid rgba(180, 35, 24, 0.35);
+    outline-offset: 2px;
+}
+
+.delete-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.delete-action .button-danger {
+    width: 100%;
+}
+
+.project-delete-modal {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-delete-modal:not(:popover-open) {
+    display: none;
+}
+
+.project-delete-modal__backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(28, 25, 23, 0.55);
+    cursor: default;
+}
+
+.project-delete-modal__content {
+    position: relative;
+    width: min(420px, calc(100% - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.75rem 1.5rem 1.5rem;
+    box-shadow: 0 20px 50px rgba(28, 25, 23, 0.25);
+}
+
+.project-delete-modal__content h2 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.project-delete-modal__content p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+.project-delete-modal__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.project-delete-modal__close:hover {
+    background: var(--line);
+    color: var(--ink);
+}
+
+.project-delete-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.project-delete-modal__actions form {
+    display: contents;
+}
+
 @media (max-width: 600px) {
     .site-header .container {
         flex-direction: column;
@@ -142,5 +272,14 @@ h1, .brand {
 
     .experience-grid {
         grid-template-columns: 1fr;
+    }
+
+    .project-delete-modal__actions {
+        flex-direction: column-reverse;
+    }
+
+    .project-delete-modal__actions .button {
+        width: 100%;
+        text-align: center;
     }
 }

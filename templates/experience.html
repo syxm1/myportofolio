@@ -30,6 +30,8 @@
                     {% else %}
                     <p class="experience-status">Selesai</p>
                     {% endif %}
+
+                    {% include 'components/experience_delete_modal.html' %}
                 </article>
                 {% empty %}
                 <p class="empty-state">
