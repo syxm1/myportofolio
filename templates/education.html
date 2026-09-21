@@ -39,7 +39,10 @@
                     <p class="experience-status">Selesai</p>
                     {% endif %}
 
-                    {% include 'components/education_delete_modal.html' %}
+                    <div class="card-actions">
+                        {% include 'components/education_delete_modal.html' %}
+                        <a href="{% url 'main:edit_education' education.id %}" class="button button-secondary">Modify Education</a>
+                    </div>
                 </article>
                 {% empty %}
                 <p class="empty-state">

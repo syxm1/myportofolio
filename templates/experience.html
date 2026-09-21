@@ -36,7 +36,10 @@
                     <p class="experience-status">Selesai</p>
                     {% endif %}
 
-                    {% include 'components/experience_delete_modal.html' %}
+                    <div class="card-actions">
+                        {% include 'components/experience_delete_modal.html' %}
+                        <a href="{% url 'main:edit_experience' experience.id %}" class="button button-secondary">Modify Experience</a>
+                    </div>
                 </article>
                 {% empty %}
                 <p class="empty-state">

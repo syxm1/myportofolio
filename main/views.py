@@ -69,12 +69,42 @@ def create_experience(request):
     }
     return render(request, "experience_form.html", context)
 
+def edit_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    form = ExperienceForm(request.POST or None, instance=experience)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Experience has been successfully updated!")
+        return redirect("main:show_experience")
+
+    context = {
+        "name": "Hisyam",
+        "form": form,
+    }
+    return render(request, "experience_form.html", context)
+
 def create_education(request):
     form = EducationForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "New education has been successfully added!")
+        return redirect("main:show_education")
+
+    context = {
+        "name": "Hisyam",
+        "form": form,
+    }
+    return render(request, "education_form.html", context)
+
+def edit_education(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+    form = EducationForm(request.POST or None, instance=education)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Education has been successfully updated!")
         return redirect("main:show_education")
 
     context = {

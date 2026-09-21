@@ -133,11 +133,22 @@ h1, .brand {
     font-weight: 600;
 }
 
+.card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.card-actions .button {
+    width: 100%;
+    text-align: center;
+}
+
 .delete-action {
     display: flex;
     justify-content: flex-end;
-    margin-top: auto;
-    padding-top: 1rem;
 }
 
 .button {
