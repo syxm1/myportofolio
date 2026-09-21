@@ -11,8 +11,13 @@
 <main>
     <section class="experience-section" id="education">
         <div class="container">
-            <p class="section-kicker">Riwayat pendidikan saya</p>
-            <h1>Education</h1>
+            <div class="section-header">
+                <div>
+                    <p class="section-kicker">Riwayat pendidikan saya</p>
+                    <h1>Education</h1>
+                </div>
+                <a href="{% url 'main:create_education' %}" class="button">Add New Education</a>
+            </div>
 
             <div class="experience-grid">
                 {% for education in education_list %}
