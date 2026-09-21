@@ -1,4 +1,4 @@
-from django.forms import ModelForm, TextInput, Textarea, URLInput, Select
+from django.forms import DateInput, ModelForm, TextInput, Textarea, URLInput, Select
 
 from main.models import Education, Experience
 
@@ -7,14 +7,12 @@ class ExperienceForm(ModelForm):
     class Meta:
         model = Experience
 
-        # `started_at` is left out: the model sets it with auto_now_add=True,
-        # which makes it non-editable — listing it here would raise a
-        # FieldError when Django builds the form.
         fields = [
             "title",
             "description",
             "category",
             "thumbnail",
+            "started_at",
             "ended_at",
         ]
 
@@ -23,6 +21,7 @@ class ExperienceForm(ModelForm):
             "description": "Description",
             "category": "Category",
             "thumbnail": "Thumbnail Link",
+            "started_at": "Start Date",
             "ended_at": "End Date",
         }
 
@@ -44,6 +43,8 @@ class ExperienceForm(ModelForm):
                     "placeholder": "https://...",
                 }
             ),
+            "started_at": DateInput(attrs={"type": "date"}),
+            "ended_at": DateInput(attrs={"type": "date"}),
         }
 
 
@@ -51,14 +52,13 @@ class EducationForm(ModelForm):
     class Meta:
         model = Education
 
-        # `started_at` is left out for the same reason as in ExperienceForm:
-        # auto_now_add=True makes it non-editable.
         fields = [
             "institution",
             "program",
             "level",
             "description",
             "thumbnail",
+            "started_at",
             "ended_at",
         ]
 
@@ -68,6 +68,7 @@ class EducationForm(ModelForm):
             "level": "Level",
             "description": "Description",
             "thumbnail": "Thumbnail Link",
+            "started_at": "Start Date",
             "ended_at": "End Date",
         }
 
@@ -94,4 +95,6 @@ class EducationForm(ModelForm):
                     "placeholder": "https://...",
                 }
             ),
+            "started_at": DateInput(attrs={"type": "date"}),
+            "ended_at": DateInput(attrs={"type": "date"}),
         }

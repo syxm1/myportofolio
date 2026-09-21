@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -11,12 +13,14 @@ class MainTest(TestCase):
             title="Asisten Dosen PBP",
             description="Membantu mahasiswa memahami pengembangan web.",
             category="part-time",
+            started_at=date(2024, 1, 1),
         )
         self.education = Education.objects.create(
             institution="Universitas Indonesia",
             program="S1 Ilmu Komputer",
             description="Fokus pada Data Science dan ML/AI Engineering.",
             level="undergraduate",
+            started_at=date(2023, 8, 1),
         )
 
     def test_main_url_is_accessible(self):
