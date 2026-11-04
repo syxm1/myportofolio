@@ -1,0 +1,212 @@
+<script>
+{% if kind == 'education' %}
+const API_CONFIG = {
+    list: "{% url 'api:education-list' %}",
+    detail: "{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}",
+    star: "{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}",
+    edit: "{% url 'main:edit_education' '00000000-0000-0000-0000-000000000000' %}",
+    searchField: 'institution',
+    formId: 'education-form',
+    modalId: 'add-education-modal',
+    noun: 'Education',
+};
+const IS_EDUCATION = true;
+const TYPE_LABELS = {
+    grade_school: 'Grade School',
+    junior_high_school: 'Junior High School',
+    high_school: 'High School',
+    undergraduate: 'Undergraduate',
+    graduate: 'Graduate',
+};
+{% else %}
+const API_CONFIG = {
+    list: "{% url 'api:experience-list' %}",
+    detail: "{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}",
+    star: "{% url 'api:experience-star' '00000000-0000-0000-0000-000000000000' %}",
+    edit: "{% url 'main:edit_experience' '00000000-0000-0000-0000-000000000000' %}",
+    searchField: 'title',
+    formId: 'experience-form',
+    modalId: 'add-experience-modal',
+    noun: 'Experience',
+};
+const IS_EDUCATION = false;
+const TYPE_LABELS = {
+    internship: 'Internship',
+    research: 'Research',
+    volunteer: 'Volunteer',
+    'part-time': 'Part-Time',
+    'full-time': 'Full-Time',
+    freelance: 'Freelance',
+};
+{% endif %}
+
+const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+const CAN_MANAGE = "{{ can_manage|yesno:'true,false' }}" === "true";
+const loadingState = document.getElementById('loading');
+const errorState = document.getElementById('error');
+const emptyState = document.getElementById('empty');
+const gridContainer = document.getElementById('grid');
+const searchForm = document.getElementById('project-search-form');
+const searchInput = document.getElementById('search-input');
+const recordForm = document.getElementById(API_CONFIG.formId);
+let listAbortController;
+let searchDebounceTimer;
+
+function getCookie(name) {
+    const prefix = `${name}=`;
+    const cookie = document.cookie.split(';').map(value => value.trim())
+        .find(value => value.startsWith(prefix));
+    return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+function recordEndpoint(pattern, id) {
+    return pattern.replace('00000000-0000-0000-0000-000000000000', id);
+}
+
+function displayPageSection({ showLoading = false, showError = false,
+    showEmpty = false, showGrid = false }) {
+    loadingState.classList.toggle('hide', !showLoading);
+    errorState.classList.toggle('hide', !showError);
+    emptyState.classList.toggle('hide', !showEmpty);
+    gridContainer.classList.toggle('hide', !showGrid);
+}
+
+function buildRecordCardElement(record) {
+    const article = document.createElement('article');
+    article.className = 'experience-card';
+    const title = IS_EDUCATION ? record.institution : record.title;
+    const type = IS_EDUCATION ? record.level : record.category;
+    const image = record.thumbnail
+        ? `<img src="${escapeHtml(record.thumbnail)}" alt="Gambar ${escapeHtml(title)}" class="project-image">` : '';
+    const program = IS_EDUCATION
+        ? `<p class="experience-description">${escapeHtml(record.program)}</p>` : '';
+    const startYear = record.started_at ? record.started_at.slice(0, 4) : '';
+    const endLabel = record.ended_at ? record.ended_at.slice(0, 4) : 'Sekarang';
+    const statusText = record.ended_at ? 'Selesai' : 'Sedang berlangsung';
+    const star = IS_AUTHENTICATED
+        ? `<button type="button" class="button button-star${record.is_starred ? ' is-starred' : ''}"
+            data-action="star" data-id="${escapeHtml(record.id)}"
+            title="${escapeHtml(record.starred_by_names)}">
+            <span aria-hidden="true">★</span> ${record.is_starred ? 'Unstar' : 'Star'}
+            <span class="star-count">${record.star_count}</span></button>`
+        : `<a href="{% url 'main:login' %}" class="button">Login untuk star (${record.star_count})</a>`;
+    const edit = CAN_MANAGE
+        ? `<a href="${recordEndpoint(API_CONFIG.edit, record.id)}" class="button button-secondary">Modify ${API_CONFIG.noun}</a>` : '';
+    const remove = IS_SUPERUSER
+        ? `<button type="button" class="button button-danger" data-action="delete"
+            data-id="${escapeHtml(record.id)}">Hapus</button>` : '';
+    article.innerHTML = `${image}
+        <span class="experience-category">${escapeHtml(TYPE_LABELS[type] || type)}</span>
+        <h2>${escapeHtml(title)}</h2>
+        ${program}
+        <p class="experience-description">${escapeHtml(record.description)}</p>
+        <p class="experience-status">${escapeHtml(startYear)} – ${escapeHtml(endLabel)} · ${statusText}</p>
+        <div class="project-card-actions"><div class="project-actions">${star}${edit}${remove}</div></div>`;
+    return article;
+}
+
+async function fetchRecords(searchQuery = '') {
+    if (listAbortController) listAbortController.abort();
+    listAbortController = new AbortController();
+    try {
+        displayPageSection({ showLoading: true });
+        const url = new URL(API_CONFIG.list, window.location.origin);
+        if (searchQuery) url.searchParams.set(API_CONFIG.searchField, searchQuery);
+        const response = await fetch(url, {
+            headers: { Accept: 'application/json' },
+            signal: listAbortController.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const records = await response.json();
+        gridContainer.replaceChildren(...records.map(buildRecordCardElement));
+        displayPageSection({ showGrid: records.length > 0, showEmpty: records.length === 0 });
+    } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error(error);
+        displayPageSection({ showError: true });
+    }
+}
+
+function apiErrorMessage(data, status) {
+    const messages = Object.values(data).flat().filter(value => typeof value === 'string');
+    return messages.join(' ') || `Request failed (HTTP ${status}).`;
+}
+
+async function writeRecord(url, method, payload) {
+    const response = await fetch(url, {
+        method,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') || '',
+        },
+        body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+    if (response.status === 204) return null;
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+    return data;
+}
+
+async function addRecord(event) {
+    event.preventDefault();
+    const button = recordForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+        const fields = new FormData(recordForm);
+        const names = IS_EDUCATION
+            ? ['institution', 'program', 'level', 'description', 'thumbnail', 'started_at', 'ended_at']
+            : ['title', 'description', 'category', 'thumbnail', 'started_at', 'ended_at'];
+        const payload = Object.fromEntries(names.map(name => [name, fields.get(name)]));
+        if (!payload.ended_at) payload.ended_at = null;
+        await writeRecord(API_CONFIG.list, 'POST', payload);
+        recordForm.reset();
+        document.getElementById(API_CONFIG.modalId).hidePopover();
+        showToast('Berhasil', `${API_CONFIG.noun} berhasil ditambahkan.`, 'success');
+        await fetchRecords(searchInput.value.trim());
+    } catch (error) {
+        showToast(`Gagal menambahkan ${API_CONFIG.noun}`, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+if (recordForm) recordForm.addEventListener('submit', addRecord);
+
+gridContainer.addEventListener('click', async function(event) {
+    const button = event.target.closest('button[data-action]');
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (action === 'delete' && !window.confirm(`Yakin ingin menghapus ${API_CONFIG.noun} ini?`)) return;
+    button.disabled = true;
+    try {
+        const pattern = action === 'star' ? API_CONFIG.star : API_CONFIG.detail;
+        await writeRecord(recordEndpoint(pattern, button.dataset.id),
+            action === 'star' ? 'POST' : 'DELETE');
+        showToast('Berhasil', action === 'star' ? 'Star diperbarui.' : `${API_CONFIG.noun} dihapus.`, 'success');
+        await fetchRecords(searchInput.value.trim());
+    } catch (error) {
+        showToast('Permintaan gagal', error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => fetchRecords(searchInput.value.trim()), 300);
+});
+searchForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    clearTimeout(searchDebounceTimer);
+    fetchRecords(searchInput.value.trim());
+});
+fetchRecords(searchInput.value.trim());
+</script>
