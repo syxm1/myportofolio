@@ -31,6 +31,13 @@ Install requirements yang diperlukan.
 pip install -r requirements.txt
 ```
 
+Siapkan secret key lokal pada `.env` yang tidak dilacak Git:
+
+```bash
+cp .env.example .env
+python -c 'from pathlib import Path; from secrets import token_urlsafe; p = Path(".env"); p.write_text(p.read_text().replace("DJANGO_SECRET_KEY=", "DJANGO_SECRET_KEY=" + token_urlsafe(64), 1))'
+```
+
 Run command di bawah untuk mulai menjalakan web.
 
 ```bash
@@ -42,6 +49,8 @@ Buka browser, masuk ke halaman `localhost:8000` untuk memuat web. Virtual enviro
 ```bash
 deactivate
 ```
+
+Untuk deployment, atur `PRODUCTION=true` dan `DJANGO_SECRET_KEY` yang unik di environment server. Gunakan key baru bila key lama pernah dipakai di server; pergantian key akan membuat sesi login lama tidak berlaku. Aktifkan `DJANGO_SSL_REDIRECT=true` setelah memastikan Django mengenali request HTTPS. Jika proxy mengatur dan membersihkan header `X-Forwarded-Proto`, set `DJANGO_TRUST_PROXY_SSL_HEADER=true`. Setelah HTTPS dipastikan berfungsi, mulai HSTS dengan `DJANGO_HSTS_SECONDS=3600` dan tingkatkan durasinya secara bertahap. Jalankan `python manage.py check --deploy` dengan environment produksi sebelum deploy.
 
 ## Seeding (Linux, Mac)
 

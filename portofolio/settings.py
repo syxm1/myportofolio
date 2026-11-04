@@ -23,14 +23,20 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError('DJANGO_SECRET_KEY must be set in the environment.')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-dsx3x*9tbdggh#-cmxi&0q8hww44(lrj-ij-m5hncf@&qg#&!4'
+DEBUG = not PRODUCTION
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+SESSION_COOKIE_SECURE = PRODUCTION
+CSRF_COOKIE_SECURE = PRODUCTION
+
+# Enable these after confirming how the HTTPS proxy handles redirects and headers.
+SECURE_SSL_REDIRECT = PRODUCTION and os.getenv('DJANGO_SSL_REDIRECT', 'false').lower() == 'true'
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_HSTS_SECONDS', '0')) if PRODUCTION else 0
+if PRODUCTION and os.getenv('DJANGO_TRUST_PROXY_SSL_HEADER', 'false').lower() == 'true':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
@@ -46,8 +52,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,7 +62,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = ["https://hisyam-prasetyo-myportofolio.pws.cs.ui.ac.id/"]
+CSRF_TRUSTED_ORIGINS = ["https://hisyam-prasetyo-myportofolio.pws.cs.ui.ac.id"]
 
 ROOT_URLCONF = 'portofolio.urls'
 
@@ -143,7 +149,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-WHITENOISE_USE_FINDERS = True
+WHITENOISE_USE_FINDERS = not PRODUCTION
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
