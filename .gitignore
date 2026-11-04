@@ -120,3 +120,11 @@ sftp-config.json
 
 # macOS
 .DS_Store
+
+# git
+.github/
+
+# agents
+.agents/
+.aws/
+.codex/
