@@ -46,26 +46,29 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "experience.html")
-        self.assertContains(response, self.experience.title)
-        self.assertContains(response, self.experience.description)
+        self.assertContains(response, reverse("api:experience-list"))
+        self.assertContains(response, 'id="grid"')
         self.assertContains(response, "Part-Time")
         self.assertContains(response, "Sedang berlangsung")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
+        api_response = self.client.get(reverse("api:experience-list"))
+        self.assertEqual(api_response.json()[0]["title"], self.experience.title)
+        self.assertEqual(api_response.json()[0]["description"], self.experience.description)
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()
         response = self.client.get(reverse("main:show_experience"))
 
-        self.assertContains(response, "Belum ada pengalaman yang ditambahkan.")
+        self.assertContains(response, "Belum ada pengalaman yang ditambahkan atau ditemukan.")
+        self.assertEqual(self.client.get(reverse("api:experience-list")).json(), [])
 
     def test_completed_experience(self):
-        self.experience.ended_at = timezone.now()
+        self.experience.ended_at = timezone.localdate()
         self.experience.save()
-        response = self.client.get(reverse("main:show_experience"))
 
         self.assertFalse(self.experience.is_ongoing)
-        self.assertContains(response, "Selesai")
-        self.assertNotContains(response, "Sedang berlangsung")
+        response = self.client.get(reverse("api:experience-detail", args=[self.experience.id]))
+        self.assertEqual(response.json()["ended_at"], timezone.localdate().isoformat())
 
     def test_education_url_is_accessible(self):
         response = self.client.get(reverse("main:show_education"))
@@ -84,23 +87,26 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "education.html")
-        self.assertContains(response, self.education.institution)
-        self.assertContains(response, self.education.program)
-        self.assertContains(response, self.education.description)
+        self.assertContains(response, reverse("api:education-list"))
+        self.assertContains(response, 'id="grid"')
         self.assertContains(response, "Undergraduate")
         self.assertContains(response, "Sedang berlangsung")
+        api_response = self.client.get(reverse("api:education-list"))
+        self.assertEqual(api_response.json()[0]["institution"], self.education.institution)
+        self.assertEqual(api_response.json()[0]["program"], self.education.program)
+        self.assertEqual(api_response.json()[0]["description"], self.education.description)
 
     def test_empty_education_page(self):
         Education.objects.all().delete()
         response = self.client.get(reverse("main:show_education"))
 
-        self.assertContains(response, "Belum ada riwayat pendidikan yang ditambahkan.")
+        self.assertContains(response, "Belum ada riwayat pendidikan yang ditambahkan atau ditemukan.")
+        self.assertEqual(self.client.get(reverse("api:education-list")).json(), [])
 
     def test_completed_education(self):
-        self.education.ended_at = timezone.now()
+        self.education.ended_at = timezone.localdate()
         self.education.save()
-        response = self.client.get(reverse("main:show_education"))
 
         self.assertFalse(self.education.is_ongoing)
-        self.assertContains(response, "Selesai")
-        self.assertNotContains(response, "Sedang berlangsung")
+        response = self.client.get(reverse("api:education-detail", args=[self.education.id]))
+        self.assertEqual(response.json()["ended_at"], timezone.localdate().isoformat())
