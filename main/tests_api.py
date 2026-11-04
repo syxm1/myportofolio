@@ -102,13 +102,37 @@ class PortfolioAPITestCases:
         self.assertEqual(response.data["star_count"], 0)
         self.assertFalse(response.data["is_starred"])
 
-    def test_staff_and_editor_cannot_manage(self):
+    def test_editor_can_update_but_cannot_create_or_delete(self):
         self.visitor.is_staff = True
         self.visitor.save()
         self.visitor.groups.add(Group.objects.create(name="Editor"))
         self.client.force_authenticate(user=self.visitor)
         response = self.client.patch(self.detail_url, {self.name_field: "Changed"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.record.refresh_from_db()
+        self.assertEqual(getattr(self.record, self.name_field), "Changed")
+        self.assertEqual(self.record.description, self.initial_data["description"])
+        response = self.client.put(self.detail_url, self.payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[self.name_field], self.payload[self.name_field])
+        self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, 403)
+        self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
+        self.assertEqual(self.model.objects.count(), 1)
+
+    def test_staff_without_editor_group_cannot_manage(self):
+        self.visitor.is_staff = True
+        self.visitor.save()
+        self.client.force_authenticate(user=self.visitor)
+        response = self.client.patch(self.detail_url, {self.name_field: "Changed"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.record.refresh_from_db()
+        self.assertEqual(getattr(self.record, self.name_field), self.initial_data[self.name_field])
+
+    def test_options_does_not_change_data(self):
+        response = self.client.options(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.record.refresh_from_db()
+        self.assertEqual(getattr(self.record, self.name_field), self.initial_data[self.name_field])
 
     def test_wrong_method(self):
         self.client.force_authenticate(user=self.owner)
