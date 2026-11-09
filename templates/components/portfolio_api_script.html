@@ -4,8 +4,6 @@ const API_CONFIG = {
     list: "{% url 'api:education-list' %}",
     detail: "{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}",
     star: "{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}",
-    edit: "{% url 'main:edit_education' '00000000-0000-0000-0000-000000000000' %}",
-    searchField: 'institution',
     formId: 'education-form',
     modalId: 'add-education-modal',
     noun: 'Education',
@@ -23,8 +21,6 @@ const API_CONFIG = {
     list: "{% url 'api:experience-list' %}",
     detail: "{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}",
     star: "{% url 'api:experience-star' '00000000-0000-0000-0000-000000000000' %}",
-    edit: "{% url 'main:edit_experience' '00000000-0000-0000-0000-000000000000' %}",
-    searchField: 'title',
     formId: 'experience-form',
     modalId: 'add-experience-modal',
     noun: 'Experience',
@@ -40,6 +36,10 @@ const TYPE_LABELS = {
 };
 {% endif %}
 
+const RECORD_FIELDS = IS_EDUCATION
+    ? ['institution', 'program', 'level', 'description', 'thumbnail', 'started_at', 'ended_at']
+    : ['title', 'description', 'category', 'thumbnail', 'started_at', 'ended_at'];
+
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
 const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
 const CAN_MANAGE = "{{ can_manage|yesno:'true,false' }}" === "true";
@@ -50,8 +50,12 @@ const gridContainer = document.getElementById('grid');
 const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('search-input');
 const recordForm = document.getElementById(API_CONFIG.formId);
+const editRecordForm = document.getElementById(`edit-${IS_EDUCATION ? 'education' : 'experience'}-form`);
+const editRecordModal = document.getElementById(`edit-${IS_EDUCATION ? 'education' : 'experience'}-modal`);
 let listAbortController;
 let searchDebounceTimer;
+let editingRecordId = null;
+let recordsById = new Map();
 
 function getCookie(name) {
     const prefix = `${name}=`;
@@ -98,7 +102,8 @@ function buildRecordCardElement(record) {
             <span class="star-count">${record.star_count}</span></button>`
         : `<a href="{% url 'main:login' %}" class="button">Login untuk star (${record.star_count})</a>`;
     const edit = CAN_MANAGE
-        ? `<a href="${recordEndpoint(API_CONFIG.edit, record.id)}" class="button button-secondary">Modify ${API_CONFIG.noun}</a>` : '';
+        ? `<button type="button" class="button button-secondary" data-action="edit"
+            data-id="${escapeHtml(record.id)}">Modify ${API_CONFIG.noun}</button>` : '';
     const remove = IS_SUPERUSER
         ? `<button type="button" class="button button-danger" data-action="delete"
             data-id="${escapeHtml(record.id)}">Hapus</button>` : '';
@@ -118,13 +123,14 @@ async function fetchRecords(searchQuery = '') {
     try {
         displayPageSection({ showLoading: true });
         const url = new URL(API_CONFIG.list, window.location.origin);
-        if (searchQuery) url.searchParams.set(API_CONFIG.searchField, searchQuery);
+        if (searchQuery) url.searchParams.set('query', searchQuery);
         const response = await fetch(url, {
             headers: { Accept: 'application/json' },
             signal: listAbortController.signal,
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const records = await response.json();
+        recordsById = new Map(records.map(record => [record.id, record]));
         gridContainer.replaceChildren(...records.map(buildRecordCardElement));
         displayPageSection({ showGrid: records.length > 0, showEmpty: records.length === 0 });
     } catch (error) {
@@ -161,10 +167,7 @@ async function addRecord(event) {
     button.disabled = true;
     try {
         const fields = new FormData(recordForm);
-        const names = IS_EDUCATION
-            ? ['institution', 'program', 'level', 'description', 'thumbnail', 'started_at', 'ended_at']
-            : ['title', 'description', 'category', 'thumbnail', 'started_at', 'ended_at'];
-        const payload = Object.fromEntries(names.map(name => [name, fields.get(name)]));
+        const payload = Object.fromEntries(RECORD_FIELDS.map(name => [name, fields.get(name)]));
         if (!payload.ended_at) payload.ended_at = null;
         await writeRecord(API_CONFIG.list, 'POST', payload);
         recordForm.reset();
@@ -180,10 +183,46 @@ async function addRecord(event) {
 
 if (recordForm) recordForm.addEventListener('submit', addRecord);
 
+function openEditModal(record) {
+    editingRecordId = record.id;
+    RECORD_FIELDS.forEach(name => {
+        editRecordForm.elements[name].value = record[name] ?? '';
+    });
+    editRecordModal.showPopover();
+}
+
+async function editRecord(event) {
+    event.preventDefault();
+    if (!editingRecordId) return;
+    const button = editRecordForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+        const fields = new FormData(editRecordForm);
+        const payload = Object.fromEntries(RECORD_FIELDS.map(name => [name, fields.get(name)]));
+        if (!payload.ended_at) payload.ended_at = null;
+        await writeRecord(recordEndpoint(API_CONFIG.detail, editingRecordId), 'PATCH', payload);
+        editRecordModal.hidePopover();
+        showToast('Berhasil', `${API_CONFIG.noun} berhasil diperbarui.`, 'success');
+        editingRecordId = null;
+        await fetchRecords(searchInput.value.trim());
+    } catch (error) {
+        showToast(`Gagal mengubah ${API_CONFIG.noun}`, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+if (editRecordForm) editRecordForm.addEventListener('submit', editRecord);
+
 gridContainer.addEventListener('click', async function(event) {
     const button = event.target.closest('button[data-action]');
     if (!button || button.disabled) return;
     const action = button.dataset.action;
+    if (action === 'edit') {
+        const record = recordsById.get(button.dataset.id);
+        if (record && editRecordForm && editRecordModal) openEditModal(record);
+        return;
+    }
     if (action === 'delete' && !window.confirm(`Yakin ingin menghapus ${API_CONFIG.noun} ini?`)) return;
     button.disabled = true;
     try {

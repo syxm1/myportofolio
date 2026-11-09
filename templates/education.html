@@ -25,7 +25,7 @@
             <form id="project-search-form" class="project-search">
                 <input type="search"
                         id="search-input"
-                        name="institution"
+                        name="query"
                         value="{{ institution_query }}"
                         placeholder="Cari berdasarkan nama institusi"
                         class="project-search__input"
@@ -56,6 +56,9 @@
 
 {% if user.is_superuser %}
     {% include "components/education_form_modal.html" %}
+{% endif %}
+{% if can_manage %}
+    {% include "components/portfolio_edit_modal.html" with kind="education" %}
 {% endif %}
 
 {% csrf_token %}

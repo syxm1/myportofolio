@@ -31,7 +31,10 @@ class EducationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_description(self, value):
-        return strip_tags(value).strip()
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Description cannot be empty.")
+        return value
 
     def get_star_count(self, obj):
         return obj.starred_by.count()
@@ -67,7 +70,10 @@ class ExperienceSerializer(serializers.ModelSerializer):
         return value
 
     def validate_description(self, value):
-        return strip_tags(value).strip()
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError("Description cannot be empty.")
+        return value
 
     def get_star_count(self, obj):
         return obj.starred_by.count()

@@ -20,9 +20,9 @@ def education_list(request):
         educations = Education.objects.prefetch_related("starred_by").order_by(
             "institution", "id"
         )
-        institution = request.query_params.get("institution", "").strip()
-        if institution:
-            educations = educations.filter(institution__icontains=institution)
+        query = request.query_params.get("query", "").strip()
+        if query:
+            educations = educations.filter(institution__icontains=query)
         serializer = EducationSerializer(
             educations, many=True, context={"request": request},
         )
@@ -42,9 +42,9 @@ def experience_list(request):
         experiences = Experience.objects.prefetch_related("starred_by").order_by(
             "title", "id"
         )
-        title = request.query_params.get("title", "").strip()
-        if title:
-            experiences = experiences.filter(title__icontains=title)
+        query = request.query_params.get("query", "").strip()
+        if query:
+            experiences = experiences.filter(title__icontains=query)
         serializer = ExperienceSerializer(
             experiences, many=True, context={"request": request},
         )

@@ -75,7 +75,7 @@ def show_main(request):
 
 
 def show_experience(request):
-    title_query = request.GET.get("title", "").strip()
+    title_query = request.GET.get("query", "").strip()
 
     context = {
         "name": "Hisyam",
@@ -86,7 +86,7 @@ def show_experience(request):
     return render(request, "experience.html", context)
 
 def show_education(request):
-    title_query = request.GET.get("institution", "").strip()
+    title_query = request.GET.get("query", "").strip()
 
     context = {
         "name": "Hisyam",

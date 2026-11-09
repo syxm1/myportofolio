@@ -1,0 +1,84 @@
+<div id="edit-{{ kind }}-modal"
+     class="project-form-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="edit-{{ kind }}-modal-title">
+    <button type="button"
+            class="project-form-modal__backdrop"
+            popovertarget="edit-{{ kind }}-modal"
+            popovertargetaction="hide"
+            aria-label="Tutup form edit {{ kind }}"></button>
+
+    <div class="project-form-modal__content">
+        <button type="button"
+                class="project-form-modal__close"
+                popovertarget="edit-{{ kind }}-modal"
+                popovertargetaction="hide"
+                aria-label="Tutup form edit {{ kind }}">×</button>
+
+        <h2 id="edit-{{ kind }}-modal-title">Edit {{ kind|title }}</h2>
+        <form id="edit-{{ kind }}-form" class="project-form">
+            {% csrf_token %}
+            {% if kind == "education" %}
+                <div class="form-group">
+                    <label for="edit-institution">Institution Name</label>
+                    <input id="edit-institution" name="institution" type="text" maxlength="255" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-program">Program</label>
+                    <input id="edit-program" name="program" type="text" maxlength="255" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-level">Level</label>
+                    <select id="edit-level" name="level" required>
+                        <option value="grade_school">Grade School</option>
+                        <option value="junior_high_school">Junior High School</option>
+                        <option value="high_school">High School</option>
+                        <option value="undergraduate">Undergraduate</option>
+                        <option value="graduate">Graduate</option>
+                    </select>
+                </div>
+            {% else %}
+                <div class="form-group">
+                    <label for="edit-title">Title</label>
+                    <input id="edit-title" name="title" type="text" maxlength="255" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-category">Category</label>
+                    <select id="edit-category" name="category" required>
+                        <option value="internship">Internship</option>
+                        <option value="research">Research</option>
+                        <option value="volunteer">Volunteer</option>
+                        <option value="part-time">Part-Time</option>
+                        <option value="full-time">Full-Time</option>
+                        <option value="freelance">Freelance</option>
+                    </select>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label for="edit-description">Description</label>
+                <textarea id="edit-description" name="description" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-thumbnail">Thumbnail Link</label>
+                <input id="edit-thumbnail" name="thumbnail" type="url">
+            </div>
+            <div class="form-group">
+                <label for="edit-started-at">Start Date</label>
+                <input id="edit-started-at" name="started_at" type="date" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-ended-at">End Date</label>
+                <input id="edit-ended-at" name="ended_at" type="date">
+            </div>
+            <div class="project-form-modal__actions">
+                <button type="button"
+                        class="button button-secondary"
+                        popovertarget="edit-{{ kind }}-modal"
+                        popovertargetaction="hide">Batal</button>
+                <button type="submit" class="button">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>

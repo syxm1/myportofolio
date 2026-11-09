@@ -25,7 +25,7 @@
             <form id="project-search-form" class="project-search">
                 <input type="search"
                         id="search-input"
-                        name="title"
+                        name="query"
                         value="{{ title_query }}"
                         placeholder="Cari berdasarkan nama experience"
                         class="project-search__input"
@@ -60,6 +60,9 @@
 
 {% if user.is_superuser %}
     {% include "components/experience_form_modal.html" %}
+{% endif %}
+{% if can_manage %}
+    {% include "components/portfolio_edit_modal.html" with kind="experience" %}
 {% endif %}
 
 {% csrf_token %}
