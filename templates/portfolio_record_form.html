@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {% if page_kind == 'project' %}Project{% else %}Certification{% endif %} - {{ name }}{% endblock title %}
+
+{% block content %}
+<main>
+    <section class="experience-section">
+        <div class="container">
+            <h1>Edit {% if page_kind == 'project' %}Project{% else %}Certification{% endif %}</h1>
+            <form method="post" class="project-form"
+                  action="{% if page_kind == 'project' %}{% url 'main:edit_project' record.id %}{% else %}{% url 'main:edit_certification' record.id %}{% endif %}">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="button">Simpan Perubahan</button>
+                <a href="{% if page_kind == 'project' %}{% url 'main:show_projects' %}{% else %}{% url 'main:show_certifications' %}{% endif %}"
+                   class="button button-secondary">Batal</a>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock content %}

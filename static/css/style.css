@@ -52,7 +52,8 @@ h1, .brand {
 
 .site-header nav {
     display: flex;
-    gap: 2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
 }
 
 .site-header nav a {
@@ -861,3 +862,37 @@ h1, .brand {
 .toast-success { border-left: 4px solid #22c55e; }
 .toast-error { border-left: 4px solid #b42318; }
 .toast-normal { border-left: 4px solid var(--accent); }
+
+/* Project and certification cards */
+.portfolio-card-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}
+
+.portfolio-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.portfolio-card-actions form {
+    display: inline;
+}
+
+.portfolio-card-link {
+    margin-top: 0.75rem;
+    overflow-wrap: anywhere;
+}
+
+
+.portfolio-flash {
+    border-left: 4px solid var(--accent);
+    background: #fff;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}

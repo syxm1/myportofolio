@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if page_kind == 'project' %}Projects{% else %}Certifications{% endif %} - {{ name }}{% endblock title %}
+
+{% block content %}
+<main>
+    <section class="experience-section" id="{{ page_kind }}">
+        <div class="container">
+            {% if messages %}
+            <div class="portfolio-flash" role="status">
+                {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+            </div>
+            {% endif %}
+            <div class="section-header">
+                <div>
+                    <p class="section-kicker">{% if page_kind == 'project' %}Karya dan eksperimen saya{% else %}Pencapaian dan pelatihan saya{% endif %}</p>
+                    <h1>{% if page_kind == 'project' %}Projects{% else %}Certifications{% endif %}</h1>
+                </div>
+                {% if user.is_superuser %}
+                <button type="button" class="button" popovertarget="add-{{ page_kind }}-modal">
+                    <span aria-hidden="true">+</span> Tambah {% if page_kind == 'project' %}Project{% else %}Certification{% endif %}
+                </button>
+                {% endif %}
+            </div>
+
+            <form method="get" class="project-search" role="search">
+                <input type="search" name="query" value="{{ query }}"
+                       placeholder="Cari berdasarkan {% if page_kind == 'project' %}judul project{% else %}nama sertifikasi{% endif %}"
+                       class="project-search__input"
+                       aria-label="Cari {% if page_kind == 'project' %}project{% else %}sertifikasi{% endif %}">
+                <button type="submit" class="button">Cari</button>
+            </form>
+
+            {% if records %}
+            <div class="experience-grid">
+                {% for record in records %}
+                <article class="experience-card">
+                    {% if page_kind == 'project' %}
+                        {% if record.project_image_url %}
+                        <img src="{{ record.project_image_url }}" alt="Gambar {{ record.title }}" class="portfolio-card-image" loading="lazy">
+                        {% endif %}
+                        <span class="experience-category">{{ record.category }}</span>
+                        <h2>{{ record.title }}</h2>
+                        <p class="experience-description">{{ record.description }}</p>
+                        <p class="experience-status">Teknologi: {{ record.tech_stack }}</p>
+                        <p class="portfolio-card-link"><a href="{{ record.project_url }}" target="_blank" rel="noopener noreferrer">Lihat project ↗</a></p>
+                    {% else %}
+                        <span class="experience-category">{{ record.issuer }}</span>
+                        <h2>{{ record.name }}</h2>
+                        <p class="experience-description">ID Kredensial: {{ record.credential_id }}</p>
+                        <p class="experience-status">Terbit: {{ record.issue_date|date:'j F Y' }}</p>
+                        {% if record.credential_url %}
+                        <p class="portfolio-card-link"><a href="{{ record.credential_url }}" target="_blank" rel="noopener noreferrer">Lihat kredensial ↗</a></p>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if can_manage %}
+                    <div class="portfolio-card-actions">
+                        {% if page_kind == 'project' %}
+                        <a href="{% url 'main:edit_project' record.id %}" class="button button-secondary">Modify Project</a>
+                        {% else %}
+                        <a href="{% url 'main:edit_certification' record.id %}" class="button button-secondary">Modify Certification</a>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <button type="button" class="button button-danger" popovertarget="delete-{{ record.id }}">Hapus</button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </article>
+
+                {% if user.is_superuser %}
+                <div id="delete-{{ record.id }}" class="project-delete-modal" popover="auto"
+                     role="dialog" aria-modal="true" aria-labelledby="delete-title-{{ record.id }}">
+                    <button type="button" class="project-delete-modal__backdrop"
+                            popovertarget="delete-{{ record.id }}" popovertargetaction="hide"
+                            aria-label="Tutup konfirmasi hapus"></button>
+                    <div class="project-delete-modal__content">
+                        <button type="button" class="project-delete-modal__close"
+                                popovertarget="delete-{{ record.id }}" popovertargetaction="hide"
+                                aria-label="Tutup konfirmasi hapus">×</button>
+                        <h2 id="delete-title-{{ record.id }}">Hapus {% if page_kind == 'project' %}Project{% else %}Certification{% endif %}?</h2>
+                        <p>Apakah Anda yakin ingin menghapus <strong>{% if page_kind == 'project' %}{{ record.title }}{% else %}{{ record.name }}{% endif %}</strong>?</p>
+                        <div class="project-delete-modal__actions">
+                            <button type="button" class="button button-secondary"
+                                    popovertarget="delete-{{ record.id }}" popovertargetaction="hide">Batal</button>
+                            <form method="post" action="{% if page_kind == 'project' %}{% url 'main:delete_project' record.id %}{% else %}{% url 'main:delete_certification' record.id %}{% endif %}">
+                                {% csrf_token %}
+                                <button type="submit" class="button button-danger">Ya, Hapus</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>Belum ada {% if page_kind == 'project' %}project{% else %}sertifikasi{% endif %} yang ditambahkan atau ditemukan.</p></div>
+            {% endif %}
+        </div>
+    </section>
+</main>
+
+{% if user.is_superuser %}
+<div id="add-{{ page_kind }}-modal" class="project-form-modal" popover="auto"
+     role="dialog" aria-modal="true" aria-labelledby="add-{{ page_kind }}-title">
+    <button type="button" class="project-form-modal__backdrop"
+            popovertarget="add-{{ page_kind }}-modal" popovertargetaction="hide"
+            aria-label="Tutup form tambah"></button>
+    <div class="project-form-modal__content">
+        <button type="button" class="project-form-modal__close"
+                popovertarget="add-{{ page_kind }}-modal" popovertargetaction="hide"
+                aria-label="Tutup form tambah">×</button>
+        <h2 id="add-{{ page_kind }}-title">Tambah {% if page_kind == 'project' %}Project{% else %}Certification{% endif %} Baru</h2>
+        <form method="post" action="{% if page_kind == 'project' %}{% url 'main:create_project' %}{% else %}{% url 'main:create_certification' %}{% endif %}" class="project-form">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            <div class="project-form-modal__actions">
+                <button type="button" class="button button-secondary"
+                        popovertarget="add-{{ page_kind }}-modal" popovertargetaction="hide">Batal</button>
+                <button type="submit" class="button">Tambah {% if page_kind == 'project' %}Project{% else %}Certification{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% if open_add %}<script>document.getElementById('add-{{ page_kind }}-modal').showPopover();</script>{% endif %}
+{% endif %}
+{% endblock content %}

@@ -59,3 +59,40 @@ class Education(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+
+class Project(models.Model):
+    CATEGORY_CHOICES = [
+        ('Web Development', 'Web Development'),
+        ('Mobile Development', 'Mobile Development'),
+        ('Machine Learning', 'Machine Learning'),
+        ('Data Science', 'Data Science'),
+        ('Other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    category = models.CharField(
+        max_length=20, choices=CATEGORY_CHOICES, default='Web Development'
+    )
+    tech_stack = models.TextField()
+    project_url = models.URLField()
+    project_image_url = models.URLField(blank=True)
+    starred_by = models.ManyToManyField(User, related_name="starred_projects", blank=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Certification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    issuer = models.CharField(max_length=100)
+    credential_id = models.CharField(max_length=100)
+    credential_url = models.URLField(blank=True)
+    issue_date = models.DateField()
+    starred_by = models.ManyToManyField(User, related_name="starred_certifications", blank=True)
+
+    def __str__(self):
+        return self.name

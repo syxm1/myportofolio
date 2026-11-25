@@ -4,8 +4,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience
-from main.models import Education
+from django.contrib.auth.models import Group, User
+from main.models import Certification, Education, Experience, Project
 
 class MainTest(TestCase):
     def setUp(self):
@@ -110,3 +110,125 @@ class MainTest(TestCase):
         self.assertFalse(self.education.is_ongoing)
         response = self.client.get(reverse("api:education-detail", args=[self.education.id]))
         self.assertEqual(response.json()["ended_at"], timezone.localdate().isoformat())
+
+
+
+class PortfolioCollectionPageTests(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(
+            title="Portfolio App", description="A sample project",
+            category="Web Development", tech_stack="Django, Flutter",
+            project_url="https://example.com/project",
+        )
+        self.certification = Certification.objects.create(
+            name="Cloud Certificate", issuer="Example Academy",
+            credential_id="CERT-42", issue_date=date(2025, 2, 3),
+        )
+        self.owner = User.objects.create_superuser(
+            username="owner-pages", password="test-password", email="owner@example.com",
+        )
+        self.editor = User.objects.create_user(
+            username="editor-pages", password="test-password",
+        )
+        self.editor.groups.add(Group.objects.create(name="Editor"))
+        self.visitor = User.objects.create_user(
+            username="visitor-pages", password="test-password",
+        )
+
+    def test_public_pages_and_navbar(self):
+        home = self.client.get(reverse("main:show_main"))
+        self.assertContains(home, reverse("main:show_projects"))
+        self.assertContains(home, reverse("main:show_certifications"))
+        projects = self.client.get(reverse("main:show_projects"))
+        certifications = self.client.get(reverse("main:show_certifications"))
+        self.assertTemplateUsed(projects, "portfolio_collection.html")
+        self.assertTemplateUsed(certifications, "portfolio_collection.html")
+        self.assertContains(projects, self.project.title)
+        self.assertContains(projects, self.project.tech_stack)
+        self.assertContains(certifications, self.certification.name)
+        self.assertContains(certifications, self.certification.credential_id)
+        self.assertNotContains(projects, "Modify Project")
+
+    def test_search_and_empty_state(self):
+        projects = self.client.get(reverse("main:show_projects"), {"query": "missing"})
+        certifications = self.client.get(
+            reverse("main:show_certifications"), {"query": "Academy"},
+        )
+        self.assertContains(projects, "Belum ada project")
+        self.assertNotContains(projects, self.project.title)
+        self.assertNotContains(certifications, self.certification.name)
+        self.assertContains(
+            self.client.get(reverse("main:show_certifications"), {"query": "Cloud"}),
+            self.certification.name,
+        )
+
+    def test_owner_can_create_and_delete_both_records(self):
+        self.client.force_login(self.owner)
+        project_response = self.client.post(reverse("main:create_project"), {
+            "title": "Another Project", "description": "A new project",
+            "category": "Mobile Development", "tech_stack": "Flutter",
+            "project_url": "https://example.com/another", "project_image_url": "",
+        })
+        certificate_response = self.client.post(reverse("main:create_certification"), {
+            "name": "Another Certificate", "issuer": "Example Academy",
+            "credential_id": "CERT-43", "credential_url": "",
+            "issue_date": "2025-03-04",
+        })
+        self.assertRedirects(project_response, reverse("main:show_projects"))
+        self.assertRedirects(certificate_response, reverse("main:show_certifications"))
+        self.assertTrue(Project.objects.filter(title="Another Project").exists())
+        self.assertTrue(Certification.objects.filter(name="Another Certificate").exists())
+
+        project_delete = reverse("main:delete_project", args=[self.project.id])
+        certification_delete = reverse(
+            "main:delete_certification", args=[self.certification.id],
+        )
+        self.assertEqual(self.client.get(project_delete).status_code, 405)
+        self.assertRedirects(self.client.post(project_delete), reverse("main:show_projects"))
+        self.assertRedirects(
+            self.client.post(certification_delete), reverse("main:show_certifications"),
+        )
+        self.assertFalse(Project.objects.filter(pk=self.project.pk).exists())
+        self.assertFalse(Certification.objects.filter(pk=self.certification.pk).exists())
+
+    def test_editor_can_edit_but_not_create_or_delete(self):
+        self.client.force_login(self.editor)
+        project_edit = reverse("main:edit_project", args=[self.project.id])
+        certification_edit = reverse(
+            "main:edit_certification", args=[self.certification.id],
+        )
+        self.assertContains(self.client.get(project_edit), "Edit Project")
+        self.assertContains(self.client.get(certification_edit), "Edit Certification")
+        self.assertRedirects(self.client.post(project_edit, {
+            "title": "Updated Project", "description": self.project.description,
+            "category": self.project.category, "tech_stack": self.project.tech_stack,
+            "project_url": self.project.project_url, "project_image_url": "",
+        }), reverse("main:show_projects"))
+        self.assertRedirects(self.client.post(certification_edit, {
+            "name": "Updated Certificate", "issuer": self.certification.issuer,
+            "credential_id": self.certification.credential_id,
+            "credential_url": "", "issue_date": "2025-02-03",
+        }), reverse("main:show_certifications"))
+        self.project.refresh_from_db()
+        self.certification.refresh_from_db()
+        self.assertEqual(self.project.title, "Updated Project")
+        self.assertEqual(self.certification.name, "Updated Certificate")
+        self.assertEqual(self.client.post(reverse("main:create_project"), {}).status_code, 403)
+        self.assertEqual(self.client.post(reverse("main:create_certification"), {}).status_code, 403)
+        self.assertEqual(self.client.post(
+            reverse("main:delete_project", args=[self.project.id]),
+        ).status_code, 403)
+        self.assertEqual(self.client.post(
+            reverse("main:delete_certification", args=[self.certification.id]),
+        ).status_code, 403)
+
+    def test_invalid_create_shows_errors_without_saving(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("main:create_project"), {
+            "title": "<b></b>", "description": "A project",
+            "category": "Other", "tech_stack": "Django",
+            "project_url": "not-a-url",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter a valid URL")
+        self.assertEqual(Project.objects.count(), 1)

@@ -6,8 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
-from main.models import Experience, Education
-from main.forms import ExperienceForm, EducationForm
+from main.models import Certification, Education, Experience, Project
+from main.forms import CertificationForm, EducationForm, ExperienceForm, ProjectForm
 
 from django.contrib.auth.decorators import login_required  
 from django.core.exceptions import PermissionDenied        
@@ -323,3 +323,105 @@ def toggle_star_experience(request, experience_id):
             experience.starred_by.add(request.user)
 
     return redirect("main:show_experience")
+
+
+
+def _portfolio_collection(request, kind, form=None, open_add=False):
+    config = {
+        "project": (Project, ProjectForm, "title", "title"),
+        "certification": (Certification, CertificationForm, "name", "-issue_date"),
+    }[kind]
+    model, form_class, search_field, ordering = config
+    query = request.GET.get("query", "").strip()
+    records = model.objects.all()
+    if query:
+        records = records.filter(**{f"{search_field}__icontains": query})
+    return render(request, "portfolio_collection.html", {
+        "name": "Hisyam",
+        "page_kind": kind,
+        "records": records.order_by(ordering),
+        "query": query,
+        "form": form if form is not None else form_class(),
+        "open_add": open_add,
+        "can_manage": is_editor_or_superuser(request.user),
+    })
+
+
+def show_projects(request):
+    return _portfolio_collection(request, "project")
+
+
+def show_certifications(request):
+    return _portfolio_collection(request, "certification")
+
+
+def _create_portfolio_record(request, kind):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    form_class = ProjectForm if kind == "project" else CertificationForm
+    form = form_class(request.POST)
+    if form.is_valid():
+        form.save()
+        messages.success(request, f"{kind.title()} berhasil ditambahkan!")
+        return redirect("main:show_projects" if kind == "project" else "main:show_certifications")
+    return _portfolio_collection(request, kind, form=form, open_add=True)
+
+
+@login_required(login_url="/login/")
+@require_POST
+def create_project(request):
+    return _create_portfolio_record(request, "project")
+
+
+@login_required(login_url="/login/")
+@require_POST
+def create_certification(request):
+    return _create_portfolio_record(request, "certification")
+
+
+def _edit_portfolio_record(request, kind, record_id):
+    if not is_editor_or_superuser(request.user):
+        raise PermissionDenied
+    model = Project if kind == "project" else Certification
+    form_class = ProjectForm if kind == "project" else CertificationForm
+    record = get_object_or_404(model, pk=record_id)
+    form = form_class(request.POST or None, instance=record)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"{kind.title()} berhasil diperbarui!")
+        return redirect("main:show_projects" if kind == "project" else "main:show_certifications")
+    return render(request, "portfolio_record_form.html", {
+        "name": "Hisyam", "page_kind": kind, "form": form, "record": record,
+    })
+
+
+@login_required(login_url="/login/")
+def edit_project(request, project_id):
+    return _edit_portfolio_record(request, "project", project_id)
+
+
+@login_required(login_url="/login/")
+def edit_certification(request, certification_id):
+    return _edit_portfolio_record(request, "certification", certification_id)
+
+
+def _delete_portfolio_record(request, kind, record_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    model = Project if kind == "project" else Certification
+    record = get_object_or_404(model, pk=record_id)
+    record.delete()
+    messages.success(request, f"{kind.title()} berhasil dihapus!")
+    return redirect("main:show_projects" if kind == "project" else "main:show_certifications")
+
+
+@login_required(login_url="/login/")
+@require_POST
+def delete_project(request, project_id):
+    return _delete_portfolio_record(request, "project", project_id)
+
+
+@login_required(login_url="/login/")
+@require_POST
+def delete_certification(request, certification_id):
+    return _delete_portfolio_record(request, "certification", certification_id)

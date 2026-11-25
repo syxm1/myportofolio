@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.forms import DateInput, ModelForm, TextInput, Textarea, URLInput, Select
 from django.utils.html import strip_tags
 
-from main.models import Education, Experience
+from main.models import Certification, Education, Experience, Project
 
 
 def plain_text(value):
@@ -129,3 +129,79 @@ class EducationForm(ModelForm):
 
     def clean_description(self):
         return plain_text(self.cleaned_data["description"])
+
+
+class ProjectForm(ModelForm):
+    class Meta:
+        model = Project
+        fields = [
+            "title", "description", "category", "tech_stack",
+            "project_url", "project_image_url",
+        ]
+        labels = {
+            "title": "Project title",
+            "description": "Description",
+            "category": "Category",
+            "tech_stack": "Tech stack",
+            "project_url": "Project URL",
+            "project_image_url": "Image URL (optional)",
+        }
+        widgets = {
+            "description": Textarea(attrs={"rows": 4}),
+            "category": Select(),
+            "project_url": URLInput(attrs={"placeholder": "https://..."}),
+            "project_image_url": URLInput(attrs={"placeholder": "https://..."}),
+        }
+
+    def clean_title(self):
+        title = plain_text(self.cleaned_data["title"])
+        if not title:
+            raise ValidationError("Project title cannot be empty.")
+        return title
+
+    def clean_description(self):
+        description = plain_text(self.cleaned_data["description"])
+        if not description:
+            raise ValidationError("Description cannot be empty.")
+        return description
+
+    def clean_tech_stack(self):
+        tech_stack = plain_text(self.cleaned_data["tech_stack"])
+        if not tech_stack:
+            raise ValidationError("Tech stack cannot be empty.")
+        return tech_stack
+
+
+class CertificationForm(ModelForm):
+    class Meta:
+        model = Certification
+        fields = ["name", "issuer", "credential_id", "credential_url", "issue_date"]
+        labels = {
+            "name": "Certification name",
+            "issuer": "Issuer",
+            "credential_id": "Credential ID",
+            "credential_url": "Credential URL (optional)",
+            "issue_date": "Issue date",
+        }
+        widgets = {
+            "credential_url": URLInput(attrs={"placeholder": "https://..."}),
+            "issue_date": DateInput(attrs={"type": "date"}),
+        }
+
+    def clean_name(self):
+        name = plain_text(self.cleaned_data["name"])
+        if not name:
+            raise ValidationError("Certification name cannot be empty.")
+        return name
+
+    def clean_issuer(self):
+        issuer = plain_text(self.cleaned_data["issuer"])
+        if not issuer:
+            raise ValidationError("Issuer cannot be empty.")
+        return issuer
+
+    def clean_credential_id(self):
+        credential_id = plain_text(self.cleaned_data["credential_id"])
+        if not credential_id:
+            raise ValidationError("Credential ID cannot be empty.")
+        return credential_id
